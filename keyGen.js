@@ -1,5 +1,5 @@
-const desHelpers = require('./desHelpers');
-const binaryConverter = require('./binaryConverter');
+const desHelpers = require('./value_storages/desHelpers');
+const binaryConverter = require('./helpers/binaryConverter');
 
 const ROUNDS = 16;
 const PART_LEN = 28;
@@ -7,6 +7,8 @@ const SHIFT_ONE = [1, 2, 9, 16];
 
 let cArray = [];
 let dArray = [];
+
+let convKeys = [];
 
 module.exports.getKeys = (initialKey) => {
   const roundKeys = [];

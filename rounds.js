@@ -1,6 +1,6 @@
-const binaryConverter = require('./binaryConverter');
-const roundHelpers = require('./roundHelpers');
-const boxes = require('./s-boxes');
+const binaryConverter = require('./helpers/binaryConverter');
+const roundHelpers = require('./value_storages/roundHelpers');
+const boxes = require('./value_storages/s-boxes');
 
 const ROUNDS = 16;
 const PART_LEN = 32;
@@ -14,12 +14,16 @@ let R_ZERO = '';
 let initialData = '';
 let encryptedValue = '';
 
-module.exports.mapThroughRounds = (inputData, keys) => {
-  for (let i = 0; i < inputData.length; i++) {
-    let concreteSymbol = binaryConverter.toFullBinary(
-      inputData[i].charCodeAt(0).toString(2)
-    );
-    initialData += concreteSymbol;
+module.exports.mapThroughRounds = (inputData, keys, mode) => {
+  if (mode === 'encrypt') {
+    for (let i = 0; i < inputData.length; i++) {
+      let concreteSymbol = binaryConverter.toFullBinary(
+        inputData[i].charCodeAt(0).toString(2)
+      );
+      initialData += concreteSymbol;
+    }
+  } else {
+    initialData = inputData;
   }
 
   initialData = initialPermutation(initialData);
@@ -27,13 +31,26 @@ module.exports.mapThroughRounds = (inputData, keys) => {
   L = initialData.slice(0, PART_LEN).join('');
   R = initialData.slice(PART_LEN).join('');
 
-  for (let i = 0; i < ROUNDS; i++) {
-    mixer(keys[i]);
+  if (mode === 'encrypt') {
+    for (let i = 0; i < ROUNDS; i++) {
+      mixer(keys[i], i);
+    }
+  } else {
+    for (let i = ROUNDS - 1; i >= 0; i--) {
+      mixer(keys[i], i);
+    }
   }
 
   encryptedValue = R + L;
 
   encryptedValue = finalPermutation(encryptedValue.split('')).join('');
+
+  let k = '';
+  for (let i = 0; i < 16; i++) {
+    let t = encryptedValue.slice(4 * i, 4 * i + 4);
+
+    k += parseInt(t, 2).toString(16).toLocaleUpperCase();
+  }
 
   return encryptedValue;
 };
@@ -46,7 +63,7 @@ function finalPermutation(data) {
   return roundHelpers.finalPermutationTable.map((bit) => data[bit - 1]);
 }
 
-function mixer(roundKey) {
+function mixer(roundKey, iteration) {
   let funcOutput = mixerFunction(roundKey);
   let mixerRes = '';
 
@@ -58,6 +75,10 @@ function mixer(roundKey) {
   // swapper
   L = R;
   R = mixerRes;
+
+  // console.log(`Round #${iteration}: \nL: ${L}`);
+  // console.log(`R: ${R}`);
+  // console.log(`Key: ${roundKey}\n`);
 }
 
 function mixerFunction(roundKey) {
