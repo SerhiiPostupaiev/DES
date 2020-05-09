@@ -8,9 +8,11 @@ const SHIFT_ONE = [1, 2, 9, 16];
 let cArray = [];
 let dArray = [];
 
-let convKeys = [];
-
 module.exports.getKeys = (initialKey) => {
+  if (initialKey.length !== 8 || typeof initialKey !== 'string') {
+    throw new Error('invalid input data');
+  }
+
   const roundKeys = [];
   let currentKey = '';
 
@@ -25,6 +27,7 @@ module.exports.getKeys = (initialKey) => {
 
   cArray = currentKey.slice(0, PART_LEN).join('');
   dArray = currentKey.slice(PART_LEN).join('');
+  checkVulnerability(cArray, dArray);
 
   for (let i = 1; i <= ROUNDS; i++) {
     roundKeys.push(createKey(i));
@@ -53,6 +56,21 @@ function createKey(iteration) {
     .join('');
 
   return finalKey;
+}
+
+function checkVulnerability(C, D) {
+  let dSum = D.split('').reduce((acc, item) => acc + parseInt(item), 0);
+  let sSum = C.split('').reduce((acc, item) => acc + parseInt(item), 0);
+
+  if (C === D) {
+    if (sSum === 0 || sSum === 28) {
+      console.log('vulnerable key');
+    }
+  } else {
+    if ((dSum === 28 && cSum === 0) || (sSum === 28 && dSum === 0)) {
+      console.log('vulnerable key');
+    }
+  }
 }
 
 function parityDrop(key) {

@@ -2,9 +2,12 @@ const keyGen = require('./keyGen');
 const roundMapper = require('./rounds');
 const converter = require('./helpers/textConverter');
 
-const keys = keyGen.getKeys('awserf45');
+const key = 'sadgsdgd';
+const message = 't3rno wo';
 
-const encValue = roundMapper.mapThroughRounds('hello wo', keys, 'encrypt');
+const keys = keyGen.getKeys(key);
+
+const encValue = roundMapper.mapThroughRounds(message, keys, 'encrypt');
 const decValue = roundMapper.mapThroughRounds(encValue, keys, 'decrypt');
 const textResult = converter.toText(decValue);
 

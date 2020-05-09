@@ -1,6 +1,7 @@
 const binaryConverter = require('./helpers/binaryConverter');
 const roundHelpers = require('./value_storages/roundHelpers');
 const boxes = require('./value_storages/s-boxes');
+const entropy = require('./entropy');
 
 const ROUNDS = 16;
 const PART_LEN = 32;
@@ -16,6 +17,10 @@ let encryptedValue = '';
 
 module.exports.mapThroughRounds = (inputData, keys, mode) => {
   if (mode === 'encrypt') {
+    if (inputData.length !== 8 || typeof inputData !== 'string') {
+      throw new Error('invalid input data');
+    }
+
     for (let i = 0; i < inputData.length; i++) {
       let concreteSymbol = binaryConverter.toFullBinary(
         inputData[i].charCodeAt(0).toString(2)
@@ -32,25 +37,25 @@ module.exports.mapThroughRounds = (inputData, keys, mode) => {
   R = initialData.slice(PART_LEN).join('');
 
   if (mode === 'encrypt') {
+    console.log('ENCRYPTION:\n');
+
     for (let i = 0; i < ROUNDS; i++) {
-      mixer(keys[i], i);
+      mixer(keys[i], i + 1, true);
     }
+
+    // entropy.calc(
+    //   '1011110100100010100001000001000011000100000110100101011011011110'
+    // );
   } else {
+    console.log('DECRYPTION:\n');
+
     for (let i = ROUNDS - 1; i >= 0; i--) {
-      mixer(keys[i], i);
+      mixer(keys[i], ROUNDS - i);
     }
   }
 
   encryptedValue = R + L;
-
   encryptedValue = finalPermutation(encryptedValue.split('')).join('');
-
-  let k = '';
-  for (let i = 0; i < 16; i++) {
-    let t = encryptedValue.slice(4 * i, 4 * i + 4);
-
-    k += parseInt(t, 2).toString(16).toLocaleUpperCase();
-  }
 
   return encryptedValue;
 };
@@ -63,7 +68,7 @@ function finalPermutation(data) {
   return roundHelpers.finalPermutationTable.map((bit) => data[bit - 1]);
 }
 
-function mixer(roundKey, iteration) {
+function mixer(roundKey, iteration, entropyNeeded) {
   let funcOutput = mixerFunction(roundKey);
   let mixerRes = '';
 
@@ -76,9 +81,14 @@ function mixer(roundKey, iteration) {
   L = R;
   R = mixerRes;
 
-  // console.log(`Round #${iteration}: \nL: ${L}`);
-  // console.log(`R: ${R}`);
-  // console.log(`Key: ${roundKey}\n`);
+  console.log(`Round #${iteration}: \nL: ${L}`);
+  console.log(`R: ${R}`);
+  console.log(`Key: ${roundKey}\n`);
+
+  if (entropyNeeded) {
+    let entropyRes = entropy.calc(L + R);
+    console.log(`Round entropy: ${entropyRes}\n`);
+  }
 }
 
 function mixerFunction(roundKey) {
